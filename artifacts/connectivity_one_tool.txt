@@ -1,0 +1,27 @@
+Registered tools:
+- get_employee_info
+
+get_employee_info employee_id=E101 as_of=2026-10-01
+{
+  "found": true,
+  "employee_id": "E101",
+  "name": "Jordan Hale",
+  "role": "standard",
+  "status": "active",
+  "tenure_years": 5,
+  "equipment": [
+    {
+      "asset_tag": "LPT-E101-1",
+      "item": "laptop",
+      "assigned_on": "2024-03-14",
+      "age_years": 2
+    },
+    {
+      "asset_tag": "MON-E101-1",
+      "item": "monitor",
+      "assigned_on": "2022-04-21",
+      "age_years": 4
+    }
+  ]
+}
+isError: False
