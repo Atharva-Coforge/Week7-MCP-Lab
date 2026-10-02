@@ -1,0 +1,14 @@
+{
+  "standard": {
+    "monitor": {"max_count": 2, "refresh_years": 3},
+    "laptop": {"max_count": 1, "refresh_years": 4}
+  },
+  "manager": {
+    "monitor": {"max_count": 2, "refresh_years": 3},
+    "laptop": {"max_count": 1, "refresh_years": 2}
+  },
+  "contractor": {
+    "monitor": {"max_count": 0, "refresh_years": null},
+    "laptop": {"max_count": 1, "refresh_years": 4}
+  }
+}
