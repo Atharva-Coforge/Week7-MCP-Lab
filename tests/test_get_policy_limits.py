@@ -9,6 +9,9 @@ def test_known_role_returns_its_limits():
         "limits": {
             "monitor": {"max_count": 2, "refresh_years": 3},
             "laptop": {"max_count": 1, "refresh_years": 4},
+            "keyboard": {"max_count": 1, "refresh_years": 2},
+            "webcam": {"max_count": 1, "refresh_years": 4},
+            "phone": {"max_count": 0, "refresh_years": None},
         },
     }
 

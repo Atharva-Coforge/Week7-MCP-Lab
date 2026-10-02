@@ -1,14 +1,23 @@
 {
   "standard": {
     "monitor": {"max_count": 2, "refresh_years": 3},
-    "laptop": {"max_count": 1, "refresh_years": 4}
+    "laptop": {"max_count": 1, "refresh_years": 4},
+    "keyboard": {"max_count": 1, "refresh_years": 2},
+    "webcam": {"max_count": 1, "refresh_years": 4},
+    "phone": {"max_count": 0, "refresh_years": null}
   },
   "manager": {
     "monitor": {"max_count": 2, "refresh_years": 3},
-    "laptop": {"max_count": 1, "refresh_years": 2}
+    "laptop": {"max_count": 1, "refresh_years": 2},
+    "keyboard": {"max_count": 1, "refresh_years": 2},
+    "webcam": {"max_count": 1, "refresh_years": 3},
+    "phone": {"max_count": 1, "refresh_years": 2}
   },
   "contractor": {
     "monitor": {"max_count": 0, "refresh_years": null},
-    "laptop": {"max_count": 1, "refresh_years": 4}
+    "laptop": {"max_count": 1, "refresh_years": 4},
+    "keyboard": {"max_count": 1, "refresh_years": 2},
+    "webcam": {"max_count": 0, "refresh_years": null},
+    "phone": {"max_count": 0, "refresh_years": null}
   }
 }

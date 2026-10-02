@@ -14,7 +14,7 @@ DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 def get_employee_info(employee_id: str, as_of: date | str | None = None) -> dict:
     """Return the employee record, with equipment age computed as of `as_of`.
 
-    `as_of` defaults to the day of the call. Tests and demos pass 2026-10-01.
+    `as_of` defaults to the day of the call. Unit tests pass 2026-10-01.
     An unknown id returns `found: false` and does not invent a record.
     """
     log = get_logger()
