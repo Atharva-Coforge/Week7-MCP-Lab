@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
@@ -15,7 +15,7 @@ def get_employee_info(employee_id: str, as_of: date | str | None = None) -> dict
     `as_of` defaults to the day of the call. Unit tests pass 2026-10-01.
     An unknown id returns `found: false` and does not invent a record.
     """
-    on = date.today() if as_of is None else _coerce_date(as_of)
+    on = datetime.now(UTC).date() if as_of is None else _coerce_date(as_of)
     for employee in _load_json("employees.json"):
         if employee["employee_id"] != employee_id:
             continue
@@ -105,7 +105,7 @@ def flag_for_human_review(employee_id: str, request: str, reason: str) -> dict:
         "employee_id": employee_id,
         "request": request,
         "reason": reason,
-        "escalated_at": datetime.now(timezone.utc).isoformat(),
+        "escalated_at": datetime.now(UTC).isoformat(),
     }
     path = DATA_DIR / "escalations.jsonl"
     with path.open("a", encoding="utf-8") as handle:

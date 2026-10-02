@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from equipment_agent.agent import run_request  # noqa: E402
+from equipment_agent.agent import run_request
 
 DEMOS = (
     ("E101", "I need a second monitor.", "01_approved_second_monitor.md", "approved"),
@@ -54,7 +54,7 @@ async def run_all() -> None:
 
 
 def _decision(path: Path) -> str:
-    matches = re.findall(r"^Decision:\s*(approved|denied|escalated)\b", path.read_text(encoding="utf-8"), re.I | re.M)
+    matches = re.findall(r"^Decision:\s*(approved|denied|escalated)\b", path.read_text(encoding="utf-8"), re.IGNORECASE | re.MULTILINE)
     return matches[-1].lower() if matches else ""
 
 
