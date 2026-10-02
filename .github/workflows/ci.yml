@@ -20,5 +20,11 @@ jobs:
       - name: Install locked dependencies
         run: uv sync --frozen
 
+      - name: Run ruff
+        run: uv run ruff check .
+
+      - name: Run mypy
+        run: uv run mypy .
+
       - name: Run unit tests
         run: uv run pytest

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 SCRATCHPAD_DIR = Path(__file__).resolve().parents[2] / "scratchpads"
@@ -10,7 +10,7 @@ SCRATCHPAD_DIR = Path(__file__).resolve().parents[2] / "scratchpads"
 
 def start_scratchpad(employee_id: str) -> Path:
     """Create scratchpads/<timestamp>_<employee_id>.md and return its path."""
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
     SCRATCHPAD_DIR.mkdir(parents=True, exist_ok=True)
     path = SCRATCHPAD_DIR / f"{stamp}_{employee_id}.md"
     path.write_text(f"# Equipment request {employee_id}\n\n", encoding="utf-8")

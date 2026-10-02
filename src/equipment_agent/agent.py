@@ -10,13 +10,14 @@ import json
 import os
 import re
 import sys
-from datetime import date
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import httpx
 from mcp import Client
 from mcp.client.stdio import StdioServerParameters
-from ollama import AsyncClient, ResponseError
+from ollama import AsyncClient, Message, ResponseError
 
 from equipment_agent.logging_setup import get_logger
 from equipment_agent.reflection import decision_from_eligibility, reflect_on_draft
@@ -62,7 +63,7 @@ Action Input: <json object>
 
 def decision_date() -> str:
     """The calendar day this request is decided. One request keeps one date."""
-    return date.today().isoformat()
+    return datetime.now(UTC).date().isoformat()
 
 
 async def run_one_shot() -> Path:
@@ -93,7 +94,7 @@ async def run_request(employee_id: str, sentence: str, *, model: str | None = No
     log.info("react start employee_id=%s as_of=%s", employee_id, as_of)
     path = start_scratchpad(employee_id)
     append_block(path, "Request", f"employee_id: {employee_id}\nas_of: {as_of}\n\n{sentence}")
-    messages: list[dict] = [
+    messages: list[dict[str, Any] | Message] = [
         {"role": "system", "content": system_prompt(as_of)},
         {"role": "user", "content": f"employee_id: {employee_id}\nrequest: {sentence}"},
     ]
