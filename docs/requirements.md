@@ -97,6 +97,8 @@ These four records are in `data/employees.json`. The ages below are what the rul
 | E104 | standard | `LPT-E104-1` assigned 2025-08-11 (1 year)  | I know my laptop is only 1 year old, but it was damaged. Can I get a replacement early? | Escalated. The sentence asks for an exception to the 4-year laptop window.        |
 
 
+E101 keeps one monitor so a second monitor can still be approved. E102 and E103 each have two monitors, which is the role maximum. Their graded sentences are still the laptop denial and the unclear request.
+
 E105 and E106 are contractors used to exercise that role. They are not extra demonstration runs. On 2026-10-01, Quinn Adler (`LPT-E105-1`, assigned 2022-06-18) is eligible for a laptop replacement. Casey Brooks (`LPT-E106-1`, assigned 2025-07-09) is inside the 4-year window. A monitor request for either person is `at_limit`.
 
 E107, Morgan Ellis, is `terminated`. The laptop assigned on 2019-05-02 would otherwise be old enough for a standard replacement. Eligibility returns `terminated`, and the agent denies the request.

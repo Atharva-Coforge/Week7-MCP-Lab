@@ -19,6 +19,7 @@ from mcp.client.stdio import StdioServerParameters
 from ollama import AsyncClient, ResponseError
 
 from equipment_agent.logging_setup import get_logger
+from equipment_agent.reflection import decision_from_eligibility, reflect_on_draft
 from equipment_agent.scratchpad import append_block, start_scratchpad
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -41,7 +42,7 @@ The decision date is {as_of}. That is today for this request. Tools compute equi
 Role, status, tenure, and equipment come from tools. Do not trust those facts in the sentence.
 
 Catalog items are laptop, monitor, keyboard, webcam, and phone.
-- approved: the sentence names one catalog item, and check_request_eligibility returns eligible true with reason within_policy. Do not call flag_for_human_review.
+- approved: the sentence names one catalog item, and check_request_eligibility returns eligible true with reason within_policy. count below max_count means the limit is not reached. Do not call flag_for_human_review.
 - denied: an ordinary request whose eligibility reason is too_soon or at_limit, or the employee status is terminated. Do not call flag_for_human_review.
 - escalated: the sentence names no catalog item, or it asks for an exception such as damage, loss, theft, or an early replacement. Call flag_for_human_review before this decision.
 
@@ -73,15 +74,13 @@ async def run_one_shot() -> Path:
 
     append_block(path, "Thought", ONE_SHOT_THOUGHT)
     append_block(path, "Action", action)
-    log.info("one-shot thought employee_id=%s", ONE_SHOT_EMPLOYEE_ID)
-    log.info("one-shot action %s", action)
 
     async with Client(_server_params()) as client:
         result = await client.call_tool("get_employee_info", arguments)
 
     observation = _tool_result_text(result)
     append_block(path, "Observation", observation)
-    log.info("one-shot observation employee_id=%s scratchpad=%s", ONE_SHOT_EMPLOYEE_ID, path)
+    log.info("one-shot employee_id=%s tool=get_employee_info scratchpad=%s", ONE_SHOT_EMPLOYEE_ID, path)
     print(path)
     return path
 
@@ -100,6 +99,10 @@ async def run_request(employee_id: str, sentence: str, *, model: str | None = No
     ]
     called_flag = False
     decision: str | None = None
+    seen: dict[str, str] = {}
+    stalls = 0
+    stop_reason: str | None = None
+    rewritten = False
 
     try:
         async with Client(_server_params()) as mcp:
@@ -131,9 +134,9 @@ async def run_request(employee_id: str, sentence: str, *, model: str | None = No
                             }
                         )
                     thought = extract_thought(content) or "I need a tool result before deciding."
+                    fresh = False
                     for name, args in calls:
                         if name == "flag_for_human_review" and parse_decision(content) == "denied":
-                            log.info("react skipped flag_for_human_review because the decision is denied")
                             messages.append(
                                 {
                                     "role": "tool",
@@ -142,12 +145,34 @@ async def run_request(employee_id: str, sentence: str, *, model: str | None = No
                                 }
                             )
                             continue
+                        prepared = prepare_arguments(name, args, employee_id, sentence, as_of)
+                        key = action_key(name, prepared)
+                        if key in seen:
+                            stalls += 1
+                            log.info("react step=%s repeated tool=%s", step, name)
+                            messages.append(
+                                {
+                                    "role": "tool",
+                                    "tool_name": name,
+                                    "content": (
+                                        seen[key]
+                                        + "\nAlready observed. Reply with Decision: approved, denied, or escalated."
+                                    ),
+                                }
+                            )
+                            continue
                         observation = await _record_call(
-                            mcp, path, log, employee_id, sentence, as_of, step, thought, name, args
+                            mcp, path, log, employee_id, sentence, as_of, step, thought, name, prepared
                         )
+                        seen[key] = observation
+                        fresh = True
+                        stalls = 0
                         if name == "flag_for_human_review":
                             called_flag = True
                         messages.append({"role": "tool", "tool_name": name, "content": observation})
+                    if not fresh and stalls >= 1:
+                        stop_reason = "The agent repeated a tool call instead of deciding."
+                        break
                     continue
 
                 decision = parse_decision(content)
@@ -166,8 +191,28 @@ async def run_request(employee_id: str, sentence: str, *, model: str | None = No
                     )
                     called_flag = True
                 if decision:
+                    check = reflect_on_draft(decision, latest_eligibility(seen))
+                    append_block(path, "Reflection", check["note"])
+                    log.info("react reflection confirmed=%s", check["confirmed"])
+                    if not check["confirmed"] and not rewritten:
+                        rewritten = True
+                        messages.append(response.message)
+                        messages.append(
+                            {
+                                "role": "user",
+                                "content": check["note"] + " Reply with a Decision that matches that tool result.",
+                            }
+                        )
+                        continue
+                    if not check["confirmed"]:
+                        decision = decision_from_eligibility(latest_eligibility(seen))
+                        content = f"Decision: {decision}\n{check['note']}"
                     append_block(path, "Decision", content.strip())
-                    log.info("react decision employee_id=%s decision=%s scratchpad=%s", employee_id, decision, path)
+                    log.info("react decision=%s employee_id=%s scratchpad=%s", decision, employee_id, path)
+                    break
+                stalls += 1
+                if stalls >= 2:
+                    stop_reason = "The agent did not call a tool or decide."
                     break
                 messages.append(response.message)
                 messages.append(
@@ -177,8 +222,11 @@ async def run_request(employee_id: str, sentence: str, *, model: str | None = No
                     }
                 )
             else:
+                stop_reason = "The agent stopped after 8 steps without a decision."
+
+            if decision is None:
                 decision = "escalated"
-                reason = "The agent stopped after 8 steps without a decision."
+                reason = stop_reason or "The agent stopped after 8 steps without a decision."
                 if not called_flag:
                     await _record_call(
                         mcp,
@@ -188,13 +236,13 @@ async def run_request(employee_id: str, sentence: str, *, model: str | None = No
                         sentence,
                         as_of,
                         MAX_STEPS,
-                        "The step limit is reached, so I am escalating instead of guessing.",
+                        "The loop is stopping, so I am escalating instead of guessing.",
                         "flag_for_human_review",
                         {"reason": reason},
                     )
                 final = f"Decision: escalated\n{reason}"
                 append_block(path, "Decision", final)
-                log.info("react decision employee_id=%s decision=escalated scratchpad=%s", employee_id, path)
+                log.info("react decision=escalated employee_id=%s scratchpad=%s", employee_id, path)
     except httpx.ConnectError as exc:
         raise SystemExit(
             "Ollama is not reachable at http://127.0.0.1:11434. Start it with `ollama serve`."
@@ -258,6 +306,24 @@ def escalation_reason(content: str) -> str:
     return " ".join(lines) or "Escalated for human review."
 
 
+def latest_eligibility(observations: dict[str, str]) -> dict | None:
+    """The last check_request_eligibility payload recorded for this request."""
+    found = None
+    for text in observations.values():
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(data, dict) and "eligible" in data and "reason" in data:
+            found = data
+    return found
+
+
+def action_key(name: str, arguments: dict) -> str:
+    """Stable identity of a tool call, so a repeat can stop the loop."""
+    return f"{name} {json.dumps(arguments, sort_keys=True)}"
+
+
 def prepare_arguments(
     name: str,
     arguments: dict,
@@ -306,16 +372,30 @@ def tool_calls_from_message(message: object, content: str) -> list[tuple[str, di
 
 async def _record_call(mcp, path, log, employee_id, sentence, as_of, step, thought, name, args) -> str:
     prepared = prepare_arguments(name, args, employee_id, sentence, as_of)
-    action = f"{name} {json.dumps(prepared)}"
+    action = f"{name} {json.dumps(prepared, sort_keys=True)}"
     append_block(path, "Thought", thought)
     append_block(path, "Action", action)
-    log.info("react step=%s thought employee_id=%s", step, employee_id)
-    log.info("react step=%s action %s", step, action)
     result = await mcp.call_tool(name, prepared)
     observation = _tool_result_text(result)
     append_block(path, "Observation", observation)
-    log.info("react step=%s observation tool=%s", step, name)
+    log.info("react step=%s %s", step, _call_summary(name, observation))
     return observation
+
+
+def _call_summary(name: str, observation: str) -> str:
+    try:
+        data = json.loads(observation)
+    except json.JSONDecodeError:
+        return f"tool={name}"
+    if "reason" in data:
+        return f"tool={name} eligible={data.get('eligible')} reason={data.get('reason')}"
+    if "found" in data:
+        return f"tool={name} found={data.get('found')} role={data.get('role')}"
+    if "error" in data:
+        return f"tool={name} error={data.get('error')}"
+    if name == "flag_for_human_review":
+        return f"tool={name} employee_id={data.get('employee_id')}"
+    return f"tool={name}"
 
 
 def _coerce_args(raw: object) -> dict:

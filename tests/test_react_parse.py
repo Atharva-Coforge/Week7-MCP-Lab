@@ -1,4 +1,5 @@
 from equipment_agent.agent import (
+    action_key,
     escalation_reason,
     extract_thought,
     parse_decision,
@@ -53,3 +54,9 @@ def test_prepare_arguments_uses_the_request_date():
     assert info["employee_id"] == "E101"
     assert flag["request"] == "It was damaged."
     assert flag["reason"] == "damaged"
+
+
+def test_repeated_tool_call_has_the_same_key():
+    first = prepare_arguments("get_employee_info", {"employee_id": "E101"}, "E101", "monitor", as_of="2026-10-02")
+    second = prepare_arguments("get_employee_info", {}, "E101", "monitor", as_of="2026-10-02")
+    assert action_key("get_employee_info", first) == action_key("get_employee_info", second)
