@@ -1,0 +1,77 @@
+[
+  {
+    "employee_id": "E101",
+    "name": "Jordan Hale",
+    "role": "standard",
+    "status": "active",
+    "tenure_years": 5,
+    "equipment": [
+      {"asset_tag": "LPT-E101-1", "item": "laptop", "assigned_on": "2024-03-14"},
+      {"asset_tag": "MON-E101-1", "item": "monitor", "assigned_on": "2022-04-21"}
+    ]
+  },
+  {
+    "employee_id": "E102",
+    "name": "Sam Ortiz",
+    "role": "manager",
+    "status": "active",
+    "tenure_years": 6,
+    "equipment": [
+      {"asset_tag": "LPT-E102-1", "item": "laptop", "assigned_on": "2025-12-01"},
+      {"asset_tag": "MON-E102-1", "item": "monitor", "assigned_on": "2020-11-12"}
+    ]
+  },
+  {
+    "employee_id": "E103",
+    "name": "Riley Chen",
+    "role": "standard",
+    "status": "active",
+    "tenure_years": 2,
+    "equipment": [
+      {"asset_tag": "LPT-E103-1", "item": "laptop", "assigned_on": "2018-11-11"},
+      {"asset_tag": "MON-E103-1", "item": "monitor", "assigned_on": "2021-12-31"}
+    ]
+  },
+  {
+    "employee_id": "E104",
+    "name": "Alex Nguyen",
+    "role": "standard",
+    "status": "active",
+    "tenure_years": 4,
+    "equipment": [
+      {"asset_tag": "LPT-E104-1", "item": "laptop", "assigned_on": "2025-08-11"},
+      {"asset_tag": "MON-E104-1", "item": "monitor", "assigned_on": "2024-01-22"}
+    ]
+  },
+  {
+    "employee_id": "E105",
+    "name": "Quinn Adler",
+    "role": "contractor",
+    "status": "active",
+    "tenure_years": 4,
+    "equipment": [
+      {"asset_tag": "LPT-E105-1", "item": "laptop", "assigned_on": "2022-06-18"}
+    ]
+  },
+  {
+    "employee_id": "E106",
+    "name": "Casey Brooks",
+    "role": "contractor",
+    "status": "active",
+    "tenure_years": 1,
+    "equipment": [
+      {"asset_tag": "LPT-E106-1", "item": "laptop", "assigned_on": "2025-07-09"}
+    ]
+  },
+  {
+    "employee_id": "E107",
+    "name": "Morgan Ellis",
+    "role": "standard",
+    "status": "terminated",
+    "tenure_years": 7,
+    "equipment": [
+      {"asset_tag": "LPT-E107-1", "item": "laptop", "assigned_on": "2019-05-02"},
+      {"asset_tag": "MON-E107-1", "item": "monitor", "assigned_on": "2019-05-02"}
+    ]
+  }
+]
