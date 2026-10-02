@@ -60,10 +60,18 @@ def test_unknown_employee():
 
 
 def test_unknown_item():
-    result = tools.check_request_eligibility("E101", "phone", as_of=AS_OF)
+    result = tools.check_request_eligibility("E101", "tablet", as_of=AS_OF)
 
     assert result["eligible"] is False
     assert result["reason"] == "unknown_item"
+
+
+def test_standard_employee_is_not_offered_a_phone():
+    result = tools.check_request_eligibility("E101", "phone", as_of=AS_OF)
+
+    assert result["eligible"] is False
+    assert result["reason"] == "at_limit"
+    assert result["max_count"] == 0
 
 
 def test_unknown_role_and_a_first_laptop(tmp_path, monkeypatch):

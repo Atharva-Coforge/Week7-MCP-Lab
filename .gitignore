@@ -218,3 +218,6 @@ __marimo__/
 .streamlit/secrets.toml
 
 Assignment.txt
+
+# Per-request agent traces. Finished demos are copied into artifacts/demos.
+scratchpads/

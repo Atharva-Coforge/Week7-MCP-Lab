@@ -6,25 +6,20 @@ import json
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-from equipment_agent.logging_setup import get_logger
-
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
 
 def get_employee_info(employee_id: str, as_of: date | str | None = None) -> dict:
     """Return the employee record, with equipment age computed as of `as_of`.
 
-    `as_of` defaults to the day of the call. Tests and demos pass 2026-10-01.
+    `as_of` defaults to the day of the call. Unit tests pass 2026-10-01.
     An unknown id returns `found: false` and does not invent a record.
     """
-    log = get_logger()
-    path = DATA_DIR / "employees.json"
     on = date.today() if as_of is None else _coerce_date(as_of)
-    log.info("get_employee_info employee_id=%s file=%s as_of=%s", employee_id, path, on.isoformat())
     for employee in _load_json("employees.json"):
         if employee["employee_id"] != employee_id:
             continue
-        record = {
+        return {
             "found": True,
             "employee_id": employee["employee_id"],
             "name": employee["name"],
@@ -33,27 +28,14 @@ def get_employee_info(employee_id: str, as_of: date | str | None = None) -> dict
             "tenure_years": employee["tenure_years"],
             "equipment": [_with_age(asset, on) for asset in employee["equipment"]],
         }
-        log.info(
-            "get_employee_info result employee_id=%s found=true role=%s status=%s",
-            employee_id,
-            record["role"],
-            record["status"],
-        )
-        return record
-    log.info("get_employee_info result employee_id=%s found=false", employee_id)
     return {"found": False, "employee_id": employee_id}
 
 
 def get_policy_limits(role: str) -> dict:
     """Return the item rules for a role, or an error when the role is unknown."""
-    log = get_logger()
-    path = DATA_DIR / "policies.json"
-    log.info("get_policy_limits role=%s file=%s", role, path)
     policies = _load_json("policies.json")
     if role not in policies:
-        log.info("get_policy_limits result role=%s error=unknown_role", role)
         return {"role": role, "error": "unknown_role"}
-    log.info("get_policy_limits result role=%s items=%s", role, ",".join(policies[role]))
     return {"role": role, "limits": policies[role]}
 
 
@@ -67,20 +49,11 @@ def check_request_eligibility(
     `as_of` defaults to the day of the call. A terminated employee stops the
     check before item and refresh rules run.
     """
-    log = get_logger()
     catalog_item = item.strip().lower()
-    log.info(
-        "check_request_eligibility employee_id=%s item=%s as_of=%s",
-        employee_id,
-        catalog_item,
-        as_of if as_of is not None else "today",
-    )
     employee = get_employee_info(employee_id, as_of=as_of)
     if not employee["found"]:
-        log.info("check_request_eligibility result employee_id=%s reason=unknown_employee", employee_id)
         return _eligibility(employee_id, catalog_item, False, "unknown_employee")
     if employee["status"] != "active":
-        log.info("check_request_eligibility result employee_id=%s reason=terminated", employee_id)
         return _eligibility(
             employee_id,
             catalog_item,
@@ -93,7 +66,6 @@ def check_request_eligibility(
     role = employee["role"]
     policies = _load_json("policies.json")
     if role not in policies:
-        log.info("check_request_eligibility result employee_id=%s reason=unknown_role", employee_id)
         return _eligibility(
             employee_id,
             catalog_item,
@@ -104,7 +76,6 @@ def check_request_eligibility(
         )
     rules = policies[role]
     if catalog_item not in rules:
-        log.info("check_request_eligibility result employee_id=%s reason=unknown_item", employee_id)
         return _eligibility(
             employee_id,
             catalog_item,
@@ -125,13 +96,6 @@ def check_request_eligibility(
         max_count=rule["max_count"],
         refresh_years=rule["refresh_years"],
     )
-    log.info(
-        "check_request_eligibility result employee_id=%s item=%s eligible=%s reason=%s",
-        employee_id,
-        catalog_item,
-        decision["eligible"],
-        decision["reason"],
-    )
     return decision
 
 
@@ -144,7 +108,6 @@ def flag_for_human_review(employee_id: str, request: str, reason: str) -> dict:
         "escalated_at": datetime.now(timezone.utc).isoformat(),
     }
     path = DATA_DIR / "escalations.jsonl"
-    get_logger().info("flag_for_human_review employee_id=%s file=%s", employee_id, path)
     with path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(record) + "\n")
     return record

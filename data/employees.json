@@ -7,7 +7,9 @@
     "tenure_years": 5,
     "equipment": [
       {"asset_tag": "LPT-E101-1", "item": "laptop", "assigned_on": "2024-03-14"},
-      {"asset_tag": "MON-E101-1", "item": "monitor", "assigned_on": "2022-04-21"}
+      {"asset_tag": "MON-E101-1", "item": "monitor", "assigned_on": "2022-04-21"},
+      {"asset_tag": "KBD-E101-1", "item": "keyboard", "assigned_on": "2023-02-10"},
+      {"asset_tag": "CAM-E101-1", "item": "webcam", "assigned_on": "2025-01-15"}
     ]
   },
   {
@@ -18,7 +20,9 @@
     "tenure_years": 6,
     "equipment": [
       {"asset_tag": "LPT-E102-1", "item": "laptop", "assigned_on": "2025-12-01"},
-      {"asset_tag": "MON-E102-1", "item": "monitor", "assigned_on": "2020-11-12"}
+      {"asset_tag": "MON-E102-1", "item": "monitor", "assigned_on": "2020-11-12"},
+      {"asset_tag": "MON-E102-2", "item": "monitor", "assigned_on": "2022-08-19"},
+      {"asset_tag": "PHN-E102-1", "item": "phone", "assigned_on": "2025-06-01"}
     ]
   },
   {
@@ -29,7 +33,8 @@
     "tenure_years": 2,
     "equipment": [
       {"asset_tag": "LPT-E103-1", "item": "laptop", "assigned_on": "2018-11-11"},
-      {"asset_tag": "MON-E103-1", "item": "monitor", "assigned_on": "2021-12-31"}
+      {"asset_tag": "MON-E103-1", "item": "monitor", "assigned_on": "2021-12-31"},
+      {"asset_tag": "MON-E103-2", "item": "monitor", "assigned_on": "2019-04-03"}
     ]
   },
   {
@@ -50,7 +55,8 @@
     "status": "active",
     "tenure_years": 4,
     "equipment": [
-      {"asset_tag": "LPT-E105-1", "item": "laptop", "assigned_on": "2022-06-18"}
+      {"asset_tag": "LPT-E105-1", "item": "laptop", "assigned_on": "2022-06-18"},
+      {"asset_tag": "KBD-E105-1", "item": "keyboard", "assigned_on": "2022-06-18"}
     ]
   },
   {
