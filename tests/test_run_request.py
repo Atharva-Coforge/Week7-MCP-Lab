@@ -16,6 +16,20 @@ def _saw_tool(messages: list[dict], name: str) -> bool:
     return any(message.get("tool_name") == name for message in messages)
 
 
+def _lookup_reply() -> ChatReply:
+    return _reply(
+        "Thought: I look up the employee id before deciding.",
+        [("get_employee_info", {})],
+    )
+
+
+def _policy_reply() -> ChatReply:
+    return _reply(
+        "Thought: I read the policy for this employee's role.",
+        [("get_policy_limits", {})],
+    )
+
+
 class _ApproveAndFlagModel:
     """Tries to approve and flag in one turn. The flag must not be recorded."""
 
@@ -23,6 +37,10 @@ class _ApproveAndFlagModel:
         self._tried_flag = False
 
     async def chat(self, messages: list[dict], tools: list) -> ChatReply:
+        if not _saw_tool(messages, "get_employee_info"):
+            return _lookup_reply()
+        if not _saw_tool(messages, "get_policy_limits"):
+            return _policy_reply()
         if not _saw_tool(messages, "check_request_eligibility"):
             return _reply(
                 "Thought: I need the eligibility result before I decide.",
@@ -41,6 +59,10 @@ class _StallingModel:
     """Checks eligibility, then never decides. The loop has to finish from the tool result."""
 
     async def chat(self, messages: list[dict], tools: list) -> ChatReply:
+        if not _saw_tool(messages, "get_employee_info"):
+            return _lookup_reply()
+        if not _saw_tool(messages, "get_policy_limits"):
+            return _policy_reply()
         if not _saw_tool(messages, "check_request_eligibility"):
             return _reply(
                 "Thought: I need the eligibility result before I decide.",
@@ -53,6 +75,10 @@ class _ApprovingModel:
     """Calls eligibility once, then keeps saying approved. Reflection has to correct it."""
 
     async def chat(self, messages: list[dict], tools: list) -> ChatReply:
+        if not _saw_tool(messages, "get_employee_info"):
+            return _lookup_reply()
+        if not _saw_tool(messages, "get_policy_limits"):
+            return _policy_reply()
         if not _saw_tool(messages, "check_request_eligibility"):
             return _reply(
                 "Thought: I need the eligibility result before I decide.",
@@ -61,11 +87,39 @@ class _ApprovingModel:
         return _reply("Decision: approved\nI approve this request.")
 
 
-class _UnusedModel:
-    """The loop must not ask the model when the employee id is missing."""
+class _LookupOnlyModel:
+    """Calls get_employee_info, then stops. A missing id is denied from that result."""
 
     async def chat(self, messages: list[dict], tools: list) -> ChatReply:
-        raise AssertionError("the model ran before the missing employee was reported")
+        if _saw_tool(messages, "get_employee_info"):
+            raise AssertionError("the model was asked again after the employee lookup")
+        return _lookup_reply()
+
+
+class _SkipsLookupModel:
+    """Tries eligibility first. The loop must make it look the employee up before that tool runs."""
+
+    async def chat(self, messages: list[dict], tools: list) -> ChatReply:
+        if not _saw_tool(messages, "get_employee_info"):
+            if not any("Call get_employee_info" in str(message.get("content")) for message in messages):
+                return _reply(
+                    "Thought: I will check eligibility first.",
+                    [("check_request_eligibility", {})],
+                )
+            return _lookup_reply()
+        if not _saw_tool(messages, "get_policy_limits"):
+            if not any("Call get_policy_limits" in str(message.get("content")) for message in messages):
+                return _reply(
+                    "Thought: I will check eligibility before the policy.",
+                    [("check_request_eligibility", {})],
+                )
+            return _policy_reply()
+        if not _saw_tool(messages, "check_request_eligibility"):
+            return _reply(
+                "Thought: I need the eligibility result before I decide.",
+                [("check_request_eligibility", {})],
+            )
+        return _reply("Decision: approved\nI approve this request.")
 
 
 def _reply(content: str, calls: list[tuple[str, dict]] | None = None) -> ChatReply:
@@ -113,6 +167,8 @@ async def test_request_decision_and_flag(
     text = path.read_text(encoding="utf-8")
 
     assert parse_decision(text) == expected
+    assert "## Action\n\nget_employee_info" in text
+    assert "## Action\n\nget_policy_limits" in text
     assert ("## Action\n\nflag_for_human_review" in text) is flagged
     assert ("## Action\n\ncheck_request_eligibility" in text) is checked
     if sentence.startswith("I need 200"):
@@ -157,17 +213,33 @@ async def test_an_approval_does_not_record_a_flag(tmp_path: Path, monkeypatch: p
 
 
 @pytest.mark.anyio
-async def test_a_missing_employee_is_reported_before_the_model(
+async def test_a_missing_employee_is_denied_after_the_model_looks_them_up(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _isolate(tmp_path, monkeypatch)
 
-    path = await run_request("E105E178430", "hello", llm=_UnusedModel())
+    path = await run_request("E105E178430", "hello", llm=_LookupOnlyModel())
     text = path.read_text(encoding="utf-8")
 
-    assert "get_employee_info" in text
+    assert "Model call 1" in text
+    assert "## Action\n\nget_employee_info" in text
     assert "Employee E105E178430 was not found." in text
     assert parse_decision(text) == "denied"
     assert "## Action\n\nflag_for_human_review" not in text
-    assert "Model call 1" not in text
+    assert "Model call 2" not in text
+
+
+@pytest.mark.anyio
+async def test_another_tool_is_not_run_before_the_employee_lookup(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _isolate(tmp_path, monkeypatch)
+
+    path = await run_request("E101", "I need a second monitor.", llm=_SkipsLookupModel())
+    text = path.read_text(encoding="utf-8")
+
+    assert text.index("## Action\n\nget_employee_info") < text.index("## Action\n\nget_policy_limits")
+    assert text.index("## Action\n\nget_policy_limits") < text.index("## Action\n\ncheck_request_eligibility")
+    assert parse_decision(text) == "approved"

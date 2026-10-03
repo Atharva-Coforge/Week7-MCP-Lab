@@ -8,3 +8,5 @@
 {"employee_id": "E106", "request": "how many equipment do i have", "reason": "The sentence names no catalog item.", "escalated_at": "2026-10-03T00:00:54.276064+00:00"}
 {"employee_id": "E103", "request": "Can I get new equipment? My setup isn't great.", "reason": "The sentence names no catalog item.", "escalated_at": "2026-10-03T00:09:51.259156+00:00"}
 {"employee_id": "E104", "request": "I know my laptop is only 1 year old, but it was damaged. Can I get a replacement early?", "reason": "The sentence asks for an exception, so a person must review it.", "escalated_at": "2026-10-03T00:09:58.102249+00:00"}
+{"employee_id": "E103", "request": "Can I get new equipment? My setup isn't great.", "reason": "The sentence names no catalog item.", "escalated_at": "2026-10-03T02:17:43.907901+00:00"}
+{"employee_id": "E104", "request": "I know my laptop is only 1 year old, but it was damaged. Can I get a replacement early?", "reason": "The sentence asks for an exception, so a person must review it.", "escalated_at": "2026-10-03T02:18:01.558621+00:00"}
