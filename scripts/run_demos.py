@@ -2,7 +2,6 @@
 
 import argparse
 import asyncio
-import re
 import shutil
 import sys
 from pathlib import Path
@@ -10,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from equipment_agent.agent import run_request
+from equipment_agent.agent import parse_decision, run_request
 
 DEMOS = (
     ("E101", "I need a second monitor.", "01_approved_second_monitor.md", "approved"),
@@ -46,16 +45,15 @@ async def run_all() -> None:
         print(f"\n=== {employee_id}: {sentence}")
         path = await run_request(employee_id, sentence)
         actual = _decision(path)
+        if actual != expected:
+            raise SystemExit(f"{employee_id} decided {actual or 'nothing'}, expected {expected}.")
         destination = demo_dir / filename
         shutil.copyfile(path, destination)
         print(f"saved {destination}")
-        if actual != expected:
-            raise SystemExit(f"{employee_id} decided {actual or 'nothing'}, expected {expected}.")
 
 
 def _decision(path: Path) -> str:
-    matches = re.findall(r"^Decision:\s*(approved|denied|escalated)\b", path.read_text(encoding="utf-8"), re.IGNORECASE | re.MULTILINE)
-    return matches[-1].lower() if matches else ""
+    return parse_decision(path.read_text(encoding="utf-8")) or ""
 
 
 if __name__ == "__main__":
