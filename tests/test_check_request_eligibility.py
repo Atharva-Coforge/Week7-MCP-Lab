@@ -6,6 +6,16 @@ from equipment_agent import tools
 AS_OF = date(2026, 10, 1)
 
 
+def test_two_hundred_monitors_are_over_the_limit():
+    result = tools.check_request_eligibility("E101", "monitor", as_of=AS_OF, quantity=200)
+
+    assert result["eligible"] is False
+    assert result["reason"] == "at_limit"
+    assert result["count"] == 1
+    assert result["max_count"] == 2
+    assert result["quantity"] == 200
+
+
 def test_second_monitor_is_within_policy():
     result = tools.check_request_eligibility("E101", "monitor", as_of=AS_OF)
 
@@ -14,6 +24,42 @@ def test_second_monitor_is_within_policy():
     assert result["age_years"] == 4
     assert result["count"] == 1
     assert result["max_count"] == 2
+
+
+def test_another_monitor_at_the_cap_is_at_limit():
+    result = tools.check_request_eligibility("E103", "monitor", as_of=AS_OF, adding=True)
+
+    assert result["eligible"] is False
+    assert result["reason"] == "at_limit"
+    assert result["count"] == 2
+    assert result["max_count"] == 2
+    assert result["quantity"] == 1
+
+
+def test_a_bare_monitor_at_the_cap_is_at_limit():
+    result = tools.check_request_eligibility("E103", "monitor", as_of=AS_OF)
+
+    assert result["eligible"] is False
+    assert result["reason"] == "at_limit"
+    assert result["count"] == 2
+    assert result["max_count"] == 2
+
+
+def test_replacing_a_monitor_at_the_cap_uses_the_refresh_rule():
+    result = tools.check_request_eligibility("E103", "monitor", as_of=AS_OF, replacing=True)
+
+    assert result["eligible"] is True
+    assert result["reason"] == "within_policy"
+    assert result["count"] == 2
+    assert result["max_count"] == 2
+
+
+def test_second_office_does_not_make_the_laptop_an_extra_unit():
+    result = tools.check_request_eligibility("E101", "laptop", as_of=AS_OF)
+
+    assert result["reason"] != "at_limit"
+    assert result["count"] == 1
+    assert result["max_count"] == 1
 
 
 def test_manager_laptop_is_too_soon():

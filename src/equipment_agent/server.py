@@ -27,12 +27,30 @@ def get_policy_limits(role: str) -> dict:
 
 
 @server.tool()
-def check_request_eligibility(employee_id: str, item: str, as_of: str | None = None) -> dict:
-    """Return whether an employee may receive an item under policy.
+def check_request_eligibility(
+    employee_id: str,
+    item: str,
+    as_of: str | None = None,
+    quantity: int = 1,
+    adding: bool = False,
+    replacing: bool = False,
+) -> dict:
+    """Return whether an employee may receive `quantity` units of an item.
 
     Pass as_of as YYYY-MM-DD. When as_of is omitted, the check uses the day of the call.
+    `quantity` is how many units the sentence asks for. It defaults to 1.
+    `adding` is true when the sentence asks for one more of this item.
+    `replacing` leaves the count unchanged. A bare request at the cap is not eligible
+    unless it is a replacement.
     """
-    return decide_eligibility(employee_id, item, as_of=as_of)
+    return decide_eligibility(
+        employee_id,
+        item,
+        as_of=as_of,
+        quantity=quantity,
+        adding=adding,
+        replacing=replacing,
+    )
 
 
 @server.tool()

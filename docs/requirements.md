@@ -38,7 +38,7 @@ A request for an item is inside policy only when all of the following are true:
 - The employee status is `active`. A `terminated` record stops the check before the item rules run.
 - The role exists in the policy file.
 - The item is in the catalog for that role.
-- After this request the employee would still be within `max_count`. A replacement keeps the count the same. An added unit increases the count by one.
+- After this request the employee would still be within `max_count`. A replacement of one unit keeps the count the same. An added unit increases the count by one. A numeral written immediately before the item is a quantity. Quantity above `max_count`, or owned count plus quantity above `max_count`, is outside the limit.
 - The employee does not own that item yet, or the newest matching item is at least `refresh_years` old. Age is computed from `assigned_on`. It is not stored on the asset.
 
 `check_request_eligibility` reports `eligible` and one reason code:
@@ -48,7 +48,7 @@ A request for an item is inside policy only when all of the following are true:
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
 | `within_policy`    | The item passes the count limit and the refresh window                                                                          |
 | `too_soon`         | They own the item, and the newest one is younger than `refresh_years`                                                           |
-| `at_limit`         | Granting another unit would exceed `max_count`. A contractor monitor request uses this code, because that role is offered none. |
+| `at_limit`         | The requested quantity, or one more unit, would exceed `max_count`. A contractor monitor request uses this code, because that role is offered none. |
 | `terminated`       | The employee status is `terminated`. Item and refresh rules are not applied.                                                    |
 | `unknown_employee` | The employee id is not on file                                                                                                  |
 | `unknown_role`     | The employee's role has no policy                                                                                               |
